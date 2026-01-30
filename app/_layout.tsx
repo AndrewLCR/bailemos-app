@@ -9,7 +9,12 @@ export default function Layout() {
     <SafeAreaProvider>
       <LanguageProvider>
         <AuthProvider>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#010b24" },
+            }}
+          >
             <Stack.Screen name="(auth)/login" />
             <Stack.Screen name="(auth)/register" />
             <Stack.Screen name="(tabs)" />

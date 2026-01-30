@@ -1,28 +1,25 @@
 import { Tabs } from "expo-router";
 import React from "react";
 
-import { HapticTab } from "@/components/haptic-tab";
+import { PillTabBar } from "@/components/pill-tab-bar";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/context/LanguageContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { t } = useLanguage();
 
   return (
     <Tabs
+      tabBar={(props) => <PillTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? "light"].tabIconDefault,
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? "light"].background,
-          borderTopColor: colorScheme === "dark" ? "#2a2a2a" : "#e5e5e5",
+          backgroundColor: "transparent",
+          position: "absolute",
+          borderTopWidth: 0,
+          elevation: 0,
         },
-        tabBarShowLabel: true,
       }}
     >
       <Tabs.Screen

@@ -160,16 +160,14 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#010b24" },
+  scroll: { flex: 1, backgroundColor: "#010b24" },
   scrollContent: { paddingBottom: 32 },
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 20,
-  },
-  headerTitle: {
-    color: "#000000",
+    backgroundColor: "#010b24",
   },
   subtitle: {
     fontSize: 15,

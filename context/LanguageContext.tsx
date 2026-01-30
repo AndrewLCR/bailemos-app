@@ -12,14 +12,16 @@ import {
 
 const STORAGE_KEY = "app_language";
 
+const DEFAULT_LOCALE: Locale = "es";
+
 function getDeviceLocale(): Locale {
   try {
     const locales = Localization.getLocales();
     const first = locales?.[0];
-    const code = first?.languageCode?.toLowerCase?.() ?? "en";
+    const code = first?.languageCode?.toLowerCase?.() ?? DEFAULT_LOCALE;
     return code.startsWith("es") ? "es" : "en";
   } catch {
-    return "en";
+    return DEFAULT_LOCALE;
   }
 }
 
@@ -32,7 +34,7 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => getDeviceLocale());
+  const [locale, setLocaleState] = useState<Locale>(() => DEFAULT_LOCALE);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,10 +45,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (stored === "es" || stored === "en") {
           setLocaleState(stored);
         } else {
-          setLocaleState(getDeviceLocale());
+          setLocaleState(DEFAULT_LOCALE);
         }
       } catch {
-        if (!cancelled) setLocaleState(getDeviceLocale());
+        if (!cancelled) setLocaleState(DEFAULT_LOCALE);
       }
     })();
     return () => {

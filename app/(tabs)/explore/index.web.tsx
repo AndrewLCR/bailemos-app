@@ -111,12 +111,13 @@ export default function NearbyScreenWeb() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#010b24" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    backgroundColor: "#010b24",
   },
   searchWrap: {
     flexDirection: "row",

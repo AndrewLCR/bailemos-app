@@ -3,10 +3,11 @@ import { ThemedText } from "@/components/themed-text";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useNearby } from "@/hooks/useNearby";
 import type { NearbyPlace } from "@/types/nearby";
-import { isNearbyAcademy } from "@/types/nearby";
+import { isNearbyAcademy, isNearbyEvent } from "@/types/nearby";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Location from "expo-location";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, TextInput, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,15 +21,13 @@ function getPlaceSubtitle(place: NearbyPlace): string {
 }
 
 export default function NearbyScreen() {
-  const { places, loading, error, refresh } = useNearby();
-  const [query, setQuery] = useState("");
+  const router = useRouter();
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [locationPermission, setLocationPermission] = useState<boolean | null>(
-    null,
-  );
+  const { places, loading, error, refresh } = useNearby(userLocation);
+  const [query, setQuery] = useState("");
   const searchBg = useThemeColor({}, "background");
   const searchBorder = useThemeColor(
     { light: "#e5e5e5", dark: "#2a2a2a" },
@@ -51,7 +50,6 @@ export default function NearbyScreen() {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        setLocationPermission(status === "granted");
         if (status === "granted") {
           const loc = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
@@ -59,11 +57,12 @@ export default function NearbyScreen() {
           setUserLocation(loc.coords);
         }
       } catch {
-        setLocationPermission(false);
+        // Location unavailable; nearby will use default center
       }
     })();
   }, []);
 
+  const mapRef = useRef<MapView>(null);
   const region = useMemo(() => {
     const center = userLocation ?? DEFAULT_MAP_CENTER;
     return {
@@ -73,6 +72,28 @@ export default function NearbyScreen() {
       longitudeDelta: 0.05,
     };
   }, [userLocation]);
+
+  useEffect(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.animateToRegion(region, 400);
+    }
+  }, [userLocation, region]);
+
+  const handleCalloutPress = (place: NearbyPlace) => {
+    if (isNearbyEvent(place)) {
+      router.push(`/(tabs)/book/confirm/${place.id}`);
+    } else if (isNearbyAcademy(place)) {
+      router.push({
+        pathname: `/(tabs)/explore/academy/${place.id}`,
+        params: {
+          name: place.name,
+          description: place.description,
+          location: place.location,
+          styles: place.styles.join(","),
+        },
+      });
+    }
+  };
 
   if (loading && places.length === 0) {
     return (
@@ -97,6 +118,7 @@ export default function NearbyScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={region}
         showsUserLocation={!!userLocation}
@@ -108,6 +130,7 @@ export default function NearbyScreen() {
             title={getPlaceTitle(place)}
             description={getPlaceSubtitle(place)}
             pinColor={place.type === "academy" ? "#0a7ea4" : "#22c55e"}
+            onCalloutPress={() => handleCalloutPress(place)}
           />
         ))}
       </MapView>
@@ -147,12 +170,14 @@ export default function NearbyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#010b24",
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    backgroundColor: "#010b24",
   },
   map: {
     width: "100%",
@@ -198,33 +223,4 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 8 },
   errorText: { textAlign: "center", paddingHorizontal: 24 },
   retry: { marginTop: 12, color: "#0a7ea4", fontWeight: "600" },
-  listContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  listCard: {
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-  },
-  listSubtitle: {
-    fontSize: 14,
-    opacity: 0.8,
-    marginTop: 2,
-  },
-  listType: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 4,
-  },
-  empty: {
-    paddingVertical: 48,
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    opacity: 0.8,
-  },
 });

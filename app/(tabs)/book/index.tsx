@@ -164,19 +164,20 @@ export default function BookScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#010b24" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    backgroundColor: "#010b24",
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
+    backgroundColor: "#010b24",
   },
-  headerTitle: { color: "#000000" },
   subtitle: { fontSize: 15, opacity: 0.8, marginTop: 2 },
   list: { paddingBottom: 24 },
   section: { marginBottom: 24, paddingHorizontal: 16 },

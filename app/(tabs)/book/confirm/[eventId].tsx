@@ -164,12 +164,13 @@ export default function ConfirmBookingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#010b24" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    backgroundColor: "#010b24",
   },
   header: {
     flexDirection: "row",
@@ -177,10 +178,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
     gap: 12,
+    backgroundColor: "#010b24",
   },
-  headerTitle: { color: "#000000" },
   backButton: { padding: 4 },
-  scroll: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: "#010b24" },
   scrollContent: { padding: 16, paddingBottom: 32 },
   card: {
     padding: 20,

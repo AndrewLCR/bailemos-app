@@ -34,12 +34,13 @@ export default function BookingSuccessScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#010b24" },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
+    backgroundColor: "#010b24",
   },
   iconWrap: { marginBottom: 24 },
   title: { textAlign: "center", marginBottom: 8 },
