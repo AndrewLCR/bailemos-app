@@ -1,12 +1,15 @@
-import type { Booking, CreateBookingResponse } from "@/types/booking";
+import { API_BASE } from "@/constants/api";
+import type {
+  Booking,
+  CreateBookingPayload,
+  CreateBookingResponse,
+} from "@/types/booking";
 import type { Event } from "@/types/feed";
 import axios from "axios";
 
-const API_BASE = "http://localhost:3000/api";
-
 const MOCK_EVENTS: Event[] = [
   {
-    id: "e1",
+    _id: "e1",
     type: "event",
     title: "Friday Salsa Social",
     description: "Open social with live band. All levels welcome.",
@@ -17,7 +20,7 @@ const MOCK_EVENTS: Event[] = [
     academyName: "Salsa Caliente",
   },
   {
-    id: "e2",
+    _id: "e2",
     type: "event",
     title: "Bachata Workshop",
     description: "2-hour workshop focusing on musicality and connection.",
@@ -28,7 +31,7 @@ const MOCK_EVENTS: Event[] = [
     academyName: "Tango Nuevo",
   },
   {
-    id: "e3",
+    _id: "e3",
     type: "event",
     title: "Milonga Night",
     description: "Traditional Argentine tango milonga with DJ.",
@@ -64,20 +67,23 @@ export async function fetchMyBookings(): Promise<Booking[]> {
 
 export async function createBooking(
   eventId: string,
+  options?: { role?: "leader" | "follower" }
 ): Promise<CreateBookingResponse> {
+  const payload: CreateBookingPayload = { eventId };
+  if (options?.role) payload.role = options.role;
   try {
     const res = await axios
-      .post<CreateBookingResponse>(`${API_BASE}/bookings`, { eventId })
+      .post<CreateBookingResponse>(`${API_BASE}/bookings`, payload)
       .catch(() => null);
     if (res?.data?.booking) return res.data;
   } catch {
     // fall through to mock
   }
-  const event = MOCK_EVENTS.find((e) => e.id === eventId);
+  const event = MOCK_EVENTS.find((e) => e._id === eventId);
   if (!event) throw new Error("Event not found");
   const booking: Booking = {
     id: `b-${Date.now()}`,
-    eventId: event.id,
+    eventId: event._id,
     eventTitle: event.title,
     eventDate: event.date,
     eventTime: event.time,

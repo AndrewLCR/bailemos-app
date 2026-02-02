@@ -62,11 +62,11 @@ export function useCreateBooking(onSuccess?: () => void) {
   const [error, setError] = useState<string | null>(null);
 
   const create = useCallback(
-    async (eventId: string) => {
+    async (eventId: string, options?: { role?: "leader" | "follower" }) => {
       setSubmitting(true);
       setError(null);
       try {
-        await createBookingApi(eventId);
+        await createBookingApi(eventId, options);
         onSuccess?.();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Booking failed");
@@ -75,7 +75,7 @@ export function useCreateBooking(onSuccess?: () => void) {
         setSubmitting(false);
       }
     },
-    [onSuccess],
+    [onSuccess]
   );
 
   return { create, submitting, error };

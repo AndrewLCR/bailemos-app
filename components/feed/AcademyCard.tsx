@@ -43,11 +43,11 @@ export function AcademyCard({ academy }: Props) {
           {academy.description}
         </ThemedText>
         <ThemedText style={styles.meta} numberOfLines={1}>
-          {academy.location}
+          {typeof academy.location === "string" ? academy.location : ""}
         </ThemedText>
-        {academy.styles.length > 0 && (
+        {(academy.styles ?? []).length > 0 && (
           <View style={styles.chips}>
-            {academy.styles.slice(0, 3).map((s) => (
+            {(academy.styles ?? []).slice(0, 3).map((s) => (
               <View key={s} style={styles.chip}>
                 <ThemedText style={styles.chipText}>{s}</ThemedText>
               </View>
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "#010b24",
   },
   badgeText: {
     color: "#fff",
@@ -101,20 +101,24 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 14,
+    color: "#ffffff",
   },
   name: {
     fontSize: 18,
     marginBottom: 4,
+    color: "#ffffff",
   },
   description: {
     fontSize: 14,
     opacity: 0.9,
     marginBottom: 4,
+    color: "#ffffff",
   },
   meta: {
     fontSize: 13,
     opacity: 0.7,
     marginBottom: 8,
+    color: "#ffffff",
   },
   chips: {
     flexDirection: "row",
@@ -129,7 +133,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
-    color: "#0a7ea4",
+    color: "#ffffff",
     fontWeight: "500",
   },
 });

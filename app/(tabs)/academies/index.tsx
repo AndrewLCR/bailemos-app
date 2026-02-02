@@ -1,33 +1,28 @@
+import { AcademyCard } from "@/components/feed/AcademyCard";
 import { HeaderWithProfile } from "@/components/header-with-profile";
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { useLanguage } from "@/context/LanguageContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import { useNearby } from "@/hooks/useNearby";
-import type { NearbyPlace } from "@/types/nearby";
-import { isNearbyAcademy } from "@/types/nearby";
+import { useAcademies } from "@/hooks/useAcademies";
+import type { Academy } from "@/types/feed";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
+  RefreshControl,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-function getPlaceTitle(place: NearbyPlace): string {
-  return place.type === "academy" ? place.name : place.title;
-}
-
-function getPlaceSubtitle(place: NearbyPlace): string {
-  return place.location;
-}
-
-export default function NearbyScreenWeb() {
+export default function AcademiesScreen() {
   const { t } = useLanguage();
-  const { places, loading, error, refresh } = useNearby();
+  const router = useRouter();
+  const { academies, loading, error, refresh } = useAcademies();
   const [query, setQuery] = useState("");
   const searchBg = useThemeColor({}, "background");
   const searchBorder = useThemeColor(
@@ -36,29 +31,36 @@ export default function NearbyScreenWeb() {
   );
   const inputColor = useThemeColor({}, "text");
 
-  const filteredPlaces = useMemo(() => {
-    if (!query.trim()) return places;
+  const filteredAcademies = useMemo(() => {
+    if (!query.trim()) return academies;
     const q = query.trim().toLowerCase();
-    return places.filter((p) => {
-      const title = getPlaceTitle(p).toLowerCase();
-      const location = p.location.toLowerCase();
-      const styles = isNearbyAcademy(p) ? p.styles.join(" ").toLowerCase() : "";
-      return title.includes(q) || location.includes(q) || styles.includes(q);
-    });
-  }, [places, query]);
+    return academies.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (typeof a.location === "string" &&
+          a.location.toLowerCase().includes(q)) ||
+        (a.styles ?? []).some((s) => s.toLowerCase().includes(q))
+    );
+  }, [academies, query]);
 
-  if (loading && places.length === 0) {
+  const handleAcademyPress = (academy: Academy) => {
+    const id = academy?._id ? String(academy._id) : "";
+    if (!id) return;
+    router.push(`/(tabs)/academies/academy/${encodeURIComponent(id)}`);
+  };
+
+  if (loading && academies.length === 0) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ActivityIndicator size="large" color="#0a7ea4" />
         <ThemedText style={styles.loadingText}>
-          {t("common", "loading")}
+          {t("academies", "loadingAcademies")}
         </ThemedText>
       </SafeAreaView>
     );
   }
 
-  if (error && places.length === 0) {
+  if (error && academies.length === 0) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ThemedText style={styles.errorText}>{error}</ThemedText>
@@ -71,7 +73,10 @@ export default function NearbyScreenWeb() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <HeaderWithProfile title={t("tabs", "nearby")} />
+      <HeaderWithProfile
+        title={t("academies", "title")}
+        subtitle={t("academies", "subtitle")}
+      />
       <View
         style={[
           styles.searchWrap,
@@ -81,35 +86,38 @@ export default function NearbyScreenWeb() {
         <MaterialIcons name="search" size={22} color="#FFFFFF" />
         <TextInput
           style={[styles.searchInput, { color: inputColor }]}
-          placeholder={t("explore", "searchPlaceholder")}
+          placeholder={t("academies", "searchPlaceholder")}
           placeholderTextColor="#FFFFFF"
           value={query}
           onChangeText={setQuery}
         />
       </View>
-      <FlatList<NearbyPlace>
-        data={filteredPlaces}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+      <FlatList<Academy>
+        data={filteredAcademies}
+        keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <ThemedView style={styles.listCard}>
-            <ThemedText type="defaultSemiBold">
-              {getPlaceTitle(item)}
-            </ThemedText>
-            <ThemedText style={styles.listSubtitle}>
-              {getPlaceSubtitle(item)}
-            </ThemedText>
-            <ThemedText style={styles.listType}>
-              {item.type === "academy"
-                ? t("common", "academy")
-                : t("common", "event")}
-            </ThemedText>
-          </ThemedView>
+          <Pressable
+            onPress={() => handleAcademyPress(item)}
+            style={({ pressed }) => [pressed && styles.cardPressed]}
+          >
+            <AcademyCard academy={item} />
+          </Pressable>
         )}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading && academies.length > 0}
+            onRefresh={refresh}
+            tintColor="#0a7ea4"
+          />
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <ThemedText style={styles.emptyText}>
-              {t("explore", "noPlaces")}
+              {query.trim()
+                ? t("academies", "noMatch")
+                : t("academies", "noAcademies")}
             </ThemedText>
           </View>
         }
@@ -119,7 +127,10 @@ export default function NearbyScreenWeb() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#010b24" },
+  container: {
+    flex: 1,
+    backgroundColor: "#010b24",
+  },
   center: {
     flex: 1,
     justifyContent: "center",
@@ -136,7 +147,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 10,
     marginHorizontal: 16,
-    marginTop: 8,
     marginBottom: 12,
   },
   searchInput: {
@@ -144,22 +154,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 0,
   },
-  listContent: {
-    padding: 16,
-    paddingBottom: 32,
+  list: {
+    paddingTop: 4,
+    paddingBottom: 24,
   },
-  listCard: {
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+  cardPressed: {
+    opacity: 0.85,
   },
-  listSubtitle: { fontSize: 14, opacity: 0.8, marginTop: 2 },
-  listType: { fontSize: 12, opacity: 0.6, marginTop: 4 },
-  empty: { paddingVertical: 48, alignItems: "center" },
-  emptyText: { fontSize: 16, opacity: 0.8 },
-  loadingText: { marginTop: 8 },
-  errorText: { textAlign: "center", paddingHorizontal: 24 },
-  retry: { marginTop: 12, color: "#FFFFFF", fontWeight: "600" },
+  loadingText: {
+    marginTop: 8,
+    color: "#ffffff",
+  },
+  errorText: {
+    textAlign: "center",
+    paddingHorizontal: 24,
+    color: "#ffffff",
+  },
+  retry: {
+    marginTop: 12,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  empty: {
+    paddingVertical: 48,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    opacity: 0.8,
+    color: "#ffffff",
+  },
 });

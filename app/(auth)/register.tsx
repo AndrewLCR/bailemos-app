@@ -29,22 +29,22 @@ export default function Register() {
 
       <View className="space-y-4">
         <View>
-          <Text className="text-gray-400 mb-2">Name</Text>
+          <Text className="text-white mb-2">Name</Text>
           <TextInput
             className="w-full bg-gray-800 text-white p-4 rounded-lg border border-gray-700"
             placeholder="Your Name"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#FFFFFF"
             value={name}
             onChangeText={setName}
           />
         </View>
 
         <View>
-          <Text className="text-gray-400 mb-2">Email</Text>
+          <Text className="text-white mb-2">Email</Text>
           <TextInput
             className="w-full bg-gray-800 text-white p-4 rounded-lg border border-gray-700"
             placeholder="email@example.com"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#FFFFFF"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -52,11 +52,11 @@ export default function Register() {
         </View>
 
         <View>
-          <Text className="text-gray-400 mb-2">Password</Text>
+          <Text className="text-white mb-2">Password</Text>
           <TextInput
             className="w-full bg-gray-800 text-white p-4 rounded-lg border border-gray-700"
             placeholder="Password"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#FFFFFF"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -73,8 +73,8 @@ export default function Register() {
         </TouchableOpacity>
 
         <View className="flex-row justify-center mt-4">
-          <Text className="text-gray-400">Already have an account? </Text>
-          <Link href="/login" className="text-blue-400 font-bold">
+          <Text className="text-white">Already have an account? </Text>
+          <Link href="/login" className="text-white font-bold">
             Login
           </Link>
         </View>

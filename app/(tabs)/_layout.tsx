@@ -41,20 +41,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="academies"
+        options={{
+          title: t("tabs", "academies"),
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="building.2.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="book"
         options={{
           title: t("tabs", "book"),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="calendar" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: t("tabs", "profile"),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill" color={color} />
           ),
         }}
       />

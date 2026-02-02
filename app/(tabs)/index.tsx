@@ -1,17 +1,24 @@
+import type { ClassItem } from "@/api/classes";
+import type { LeaderFollowerRole } from "@/components/ClassDetailModal";
+import { ClassDetailModal } from "@/components/ClassDetailModal";
 import { FeedItemCard } from "@/components/feed/FeedItemCard";
+import { HeaderWithProfile } from "@/components/header-with-profile";
 import { ThemedText } from "@/components/themed-text";
-import { useBookings } from "@/hooks/useBookings";
+import { useLanguage } from "@/context/LanguageContext";
+import { useBookings, useCreateBooking } from "@/hooks/useBookings";
+import { useClasses } from "@/hooks/useClasses";
 import { useFeed } from "@/hooks/useFeed";
-import type { Booking } from "@/types/booking";
 import type { FeedItem } from "@/types/feed";
 import { isEvent } from "@/types/feed";
-import { useContext, useMemo } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,59 +26,113 @@ import { AuthContext } from "../../context/AuthContext";
 
 const TODAY_PILL_BG = "#4f2984";
 
-function formatTime(t: string) {
-  const [h, m] = t.split(":");
+/** Accepts "18:00" or "Mon 18:00" (schedule from API). */
+function formatTime(scheduleOrTime: string | undefined): string {
+  if (!scheduleOrTime || typeof scheduleOrTime !== "string") return "";
+  const s = scheduleOrTime.trim();
+  const timePart = s.includes(" ") ? s.split(" ").pop() ?? s : s;
+  const [h, m] = timePart.split(":");
   const hour = parseInt(h, 10);
+  if (Number.isNaN(hour)) return scheduleOrTime;
   const am = hour < 12;
   const h12 = hour % 12 || 12;
-  return `${h12}:${m} ${am ? "AM" : "PM"}`;
+  const min = m ?? "00";
+  return `${h12}:${min} ${am ? "AM" : "PM"}`;
 }
 
-function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function TodaySection({ bookings }: { bookings: Booking[] }) {
-  const todayStr = getTodayDateString();
-  const todayBookings = useMemo(
-    () =>
-      bookings.filter(
-        (b) => b.status !== "cancelled" && b.eventDate === todayStr,
-      ),
-    [bookings, todayStr],
-  );
-
-  if (todayBookings.length === 0) return null;
+function TodaySection({
+  classes,
+  loading,
+  userAcademyName,
+  onClassPress,
+}: {
+  classes: ClassItem[];
+  loading: boolean;
+  userAcademyName: string | undefined;
+  onClassPress: (cls: ClassItem) => void;
+}) {
+  const { t } = useLanguage();
+  const isEnrolled = !!userAcademyName;
 
   return (
     <View style={styles.todaySection}>
-      <ThemedText type="subtitle" style={styles.todaySectionTitle}>
-        Today
-      </ThemedText>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.todayCarousel}
-      >
-        {todayBookings.map((booking) => (
-          <View key={booking.id} style={styles.todayPill}>
-            <ThemedText style={styles.todayPillTitle} numberOfLines={2}>
-              {booking.eventTitle}
-            </ThemedText>
-            <ThemedText style={styles.todayPillTime}>
-              {formatTime(booking.eventTime)}
-            </ThemedText>
+      <View style={styles.todayCard}>
+        <ThemedText type="subtitle" style={styles.todaySectionTitle}>
+          {t("common", "today")}
+        </ThemedText>
+        {!isEnrolled ? (
+          <ThemedText style={styles.todaySectionEmpty}>
+            {t("feed", "todaySectionEmpty")}
+          </ThemedText>
+        ) : loading ? (
+          <View style={styles.todayCarousel}>
+            <ActivityIndicator size="small" color="#ffffff" />
           </View>
-        ))}
-      </ScrollView>
+        ) : classes.length === 0 ? (
+          <ThemedText style={styles.todaySectionEmpty}>
+            {t("feed", "noEventsToday")}
+          </ThemedText>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.todayCarousel}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+          >
+            {classes.map((cls) => (
+              <TouchableOpacity
+                key={cls._id}
+                style={styles.todayPill}
+                activeOpacity={0.85}
+                onPress={() => onClassPress(cls)}
+              >
+                <ThemedText style={styles.todayPillTitle} numberOfLines={1}>
+                  {formatTime(cls.schedule ?? cls.time)} - {cls.name}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
 
 export default function HomeScreen() {
+  const { t } = useLanguage();
   const { user } = useContext(AuthContext);
   const { items, loading, error, refresh } = useFeed();
   const { bookings, refresh: refreshBookings } = useBookings();
+  const {
+    classes,
+    loading: classesLoading,
+    refresh: refreshClasses,
+  } = useClasses();
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+
+  const handleBookingSuccess = useCallback(() => {
+    setSelectedClass(null);
+    refreshBookings();
+    refreshClasses();
+  }, [refreshBookings, refreshClasses]);
+
+  const { create: createBookingFn, submitting: bookingSubmitting } =
+    useCreateBooking(handleBookingSuccess);
+
+  const handleBookClass = useCallback(
+    async (classId: string, role: LeaderFollowerRole) => {
+      try {
+        await createBookingFn(classId, { role });
+      } catch {
+        Alert.alert(
+          t("book", "bookingFailed"),
+          t("book", "bookingFailedMessage")
+        );
+      }
+    },
+    [createBookingFn, t]
+  );
 
   const isRegisteredToAcademy = (user && bookings.length > 0) ?? false;
   const feedItems = useMemo(() => {
@@ -82,13 +143,16 @@ export default function HomeScreen() {
   const handleRefresh = () => {
     refresh();
     refreshBookings();
+    refreshClasses();
   };
 
   if (loading && items.length === 0) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ActivityIndicator size="large" color="#0a7ea4" />
-        <ThemedText style={styles.loadingText}>Loading feed…</ThemedText>
+        <ThemedText style={styles.loadingText}>
+          {t("feed", "loadingFeed")}
+        </ThemedText>
       </SafeAreaView>
     );
   }
@@ -98,29 +162,56 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ThemedText style={styles.errorText}>{error}</ThemedText>
         <ThemedText onPress={handleRefresh} style={styles.retry}>
-          Tap to retry
+          {t("common", "tapToRetry")}
         </ThemedText>
       </SafeAreaView>
     );
   }
 
-  const listHeader =
-    isRegisteredToAcademy && user ? <TodaySection bookings={bookings} /> : null;
+  const userAcademyName =
+    (
+      user as {
+        academyName?: string;
+        enrolledAcademy?: { name?: string };
+      } | null
+    )?.academyName ??
+    (
+      user as {
+        academyName?: string;
+        enrolledAcademy?: { name?: string };
+      } | null
+    )?.enrolledAcademy?.name;
+
+  const listHeader = (
+    <TodaySection
+      classes={classes}
+      loading={classesLoading}
+      userAcademyName={userAcademyName}
+      onClassPress={setSelectedClass}
+    />
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>
-          Feed
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          {isRegisteredToAcademy ? "Academies & events" : "Events"}
-        </ThemedText>
-      </View>
+      <ClassDetailModal
+        visible={!!selectedClass}
+        onClose={() => setSelectedClass(null)}
+        classItem={selectedClass}
+        onBook={handleBookClass}
+        submitting={bookingSubmitting}
+      />
+      <HeaderWithProfile
+        title={t("feed", "title")}
+        subtitle={
+          isRegisteredToAcademy
+            ? t("feed", "academiesAndEvents")
+            : t("feed", "events")
+        }
+      />
       <FlatList<FeedItem>
         data={feedItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <FeedItemCard item={item} />}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => <FeedItemCard key={item._id} item={item} />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={listHeader}
@@ -135,8 +226,8 @@ export default function HomeScreen() {
           <View style={styles.empty}>
             <ThemedText style={styles.emptyText}>
               {isRegisteredToAcademy
-                ? "No academies or events yet."
-                : "No events yet."}
+                ? t("feed", "noAcademiesOrEvents")
+                : t("feed", "noEvents")}
             </ThemedText>
           </View>
         }
@@ -155,22 +246,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#010b24",
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: "#010b24",
-  },
-  headerTitle: {
-    color: "#ffffff",
-  },
-  subtitle: {
-    fontSize: 15,
-    opacity: 0.8,
-    marginTop: 2,
-    color: "#ffffff",
   },
   list: {
     paddingTop: 4,
@@ -180,10 +255,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 16,
   },
+  todayCard: {
+    backgroundColor: "rgba(79, 41, 132, 0.35)",
+    borderRadius: 12,
+    padding: 16,
+    overflow: "hidden",
+  },
   todaySectionTitle: {
     color: "#ffffff",
     marginBottom: 12,
     opacity: 0.9,
+  },
+  todaySectionEmpty: {
+    color: "#ffffff",
+    fontSize: 15,
+    opacity: 0.85,
+    lineHeight: 22,
   },
   todayCarousel: {
     flexDirection: "row",
@@ -196,7 +283,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 24,
     minWidth: 140,
-    maxWidth: 180,
+    maxWidth: 250,
   },
   todayPillTitle: {
     color: "#ffffff",
@@ -220,7 +307,7 @@ const styles = StyleSheet.create({
   },
   retry: {
     marginTop: 12,
-    color: "#0a7ea4",
+    color: "#FFFFFF",
     fontWeight: "600",
   },
   empty: {

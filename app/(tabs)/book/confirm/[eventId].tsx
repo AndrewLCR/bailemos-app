@@ -1,6 +1,7 @@
 import { fetchBookableEvents } from "@/api/booking";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useLanguage } from "@/context/LanguageContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useCreateBooking } from "@/hooks/useBookings";
 import type { Event } from "@/types/feed";
@@ -34,6 +35,7 @@ function formatTime(t: string) {
 }
 
 export default function ConfirmBookingScreen() {
+  const { t } = useLanguage();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const [event, setEvent] = useState<Event | null>(null);
@@ -51,7 +53,7 @@ export default function ConfirmBookingScreen() {
     (async () => {
       try {
         const events = await fetchBookableEvents();
-        const e = events.find((ev) => ev.id === eventId);
+        const e = events.find((ev) => ev._id === eventId);
         if (!cancelled) setEvent(e ?? null);
       } catch {
         if (!cancelled) setEvent(null);
@@ -70,8 +72,8 @@ export default function ConfirmBookingScreen() {
       await create(eventId);
     } catch {
       Alert.alert(
-        "Booking failed",
-        "Could not complete booking. Please try again.",
+        t("book", "bookingFailed"),
+        t("book", "bookingFailedMessage")
       );
     }
   };
@@ -80,7 +82,9 @@ export default function ConfirmBookingScreen() {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ActivityIndicator size="large" color="#0a7ea4" />
-        <ThemedText style={styles.loadingText}>Loading…</ThemedText>
+        <ThemedText style={styles.loadingText}>
+          {t("common", "loading")}
+        </ThemedText>
       </SafeAreaView>
     );
   }
@@ -88,9 +92,11 @@ export default function ConfirmBookingScreen() {
   if (!event) {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
-        <ThemedText style={styles.errorText}>Event not found</ThemedText>
+        <ThemedText style={styles.errorText}>
+          {t("book", "eventNotFound")}
+        </ThemedText>
         <Pressable onPress={() => router.back()}>
-          <ThemedText style={styles.link}>Go back</ThemedText>
+          <ThemedText style={styles.link}>{t("book", "goBack")}</ThemedText>
         </Pressable>
       </SafeAreaView>
     );
@@ -103,7 +109,7 @@ export default function ConfirmBookingScreen() {
           <MaterialIcons name="arrow-back" size={24} color={tint} />
         </Pressable>
         <ThemedText type="subtitle" style={styles.headerTitle}>
-          Confirm booking
+          {t("book", "confirmBooking")}
         </ThemedText>
       </View>
       <ScrollView
@@ -133,7 +139,9 @@ export default function ConfirmBookingScreen() {
           </View>
           <View style={styles.detailRow}>
             <MaterialIcons name="place" size={20} color={tint} />
-            <ThemedText style={styles.detailText}>{event.location}</ThemedText>
+            <ThemedText style={styles.detailText}>
+              {typeof event.location === "string" ? event.location : ""}
+            </ThemedText>
           </View>
           {event.description ? (
             <ThemedText style={styles.description}>
@@ -154,7 +162,7 @@ export default function ConfirmBookingScreen() {
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <ThemedText style={styles.confirmButtonText}>
-              Confirm booking
+              {t("book", "confirmBooking")}
             </ThemedText>
           )}
         </Pressable>
@@ -181,6 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#010b24",
   },
   backButton: { padding: 4 },
+  headerTitle: { color: "#ffffff", flex: 1 },
   scroll: { flex: 1, backgroundColor: "#010b24" },
   scrollContent: { padding: 16, paddingBottom: 32 },
   card: {
@@ -213,5 +222,5 @@ const styles = StyleSheet.create({
   confirmButtonText: { color: "#fff", fontSize: 17, fontWeight: "600" },
   loadingText: { marginTop: 8 },
   errorText: { textAlign: "center", paddingHorizontal: 24 },
-  link: { marginTop: 12, color: "#0a7ea4", fontWeight: "600" },
+  link: { marginTop: 12, color: "#FFFFFF", fontWeight: "600" },
 });

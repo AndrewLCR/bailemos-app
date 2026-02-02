@@ -11,7 +11,7 @@ export function FeedItemCard({ item }: Props) {
   if (isAcademy(item)) return <AcademyCard academy={item} />;
   if (isEvent(item)) {
     return (
-      <Link href={`/(tabs)/book/confirm/${item.id}`} asChild>
+      <Link href={`/(tabs)/book/confirm/${item._id}`} asChild>
         <Pressable>
           <EventCard event={item} />
         </Pressable>

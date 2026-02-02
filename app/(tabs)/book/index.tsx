@@ -1,5 +1,7 @@
+import { HeaderWithProfile } from "@/components/header-with-profile";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useLanguage } from "@/context/LanguageContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useBookableEvents, useBookings } from "@/hooks/useBookings";
 import type { Booking } from "@/types/booking";
@@ -8,9 +10,9 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Link } from "expo-router";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   View,
 } from "react-native";
@@ -35,14 +37,14 @@ function formatTime(t: string) {
 function EventRow({ event }: { event: Event }) {
   const tint = useThemeColor({}, "tint");
   return (
-    <Link href={`/(tabs)/book/confirm/${event.id}`} asChild>
+    <Link href={`/(tabs)/book/confirm/${event._id}`} asChild>
       <Pressable style={({ pressed }) => [pressed && styles.pressed]}>
         <ThemedView style={styles.eventRow}>
           <View style={styles.eventInfo}>
             <ThemedText type="defaultSemiBold">{event.title}</ThemedText>
             <ThemedText style={styles.eventMeta}>
               {formatDate(event.date)} · {formatTime(event.time)} ·{" "}
-              {event.location}
+              {typeof event.location === "string" ? event.location : ""}
             </ThemedText>
             {event.academyName && (
               <ThemedText style={styles.academyName}>
@@ -74,6 +76,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 }
 
 export default function BookScreen() {
+  const { t } = useLanguage();
   const {
     events,
     loading: eventsLoading,
@@ -96,7 +99,7 @@ export default function BookScreen() {
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ThemedText style={styles.errorText}>{eventsError}</ThemedText>
         <ThemedText onPress={refresh} style={styles.retry}>
-          Tap to retry
+          {t("book", "tapToRetry")}
         </ThemedText>
       </SafeAreaView>
     );
@@ -104,52 +107,12 @@ export default function BookScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>
-          Book
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Reserve your spot at events
-        </ThemedText>
-      </View>
-      <FlatList
-        data={[]}
-        ListHeaderComponent={
-          <>
-            <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
-                My Bookings
-              </ThemedText>
-              {bookingsLoading && bookings.length === 0 ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#0a7ea4"
-                  style={styles.sectionLoader}
-                />
-              ) : bookings.length === 0 ? (
-                <ThemedText style={styles.emptyText}>
-                  No bookings yet.
-                </ThemedText>
-              ) : (
-                bookings.map((b) => <BookingRow key={b.id} booking={b} />)
-              )}
-            </View>
-            <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
-                Upcoming events
-              </ThemedText>
-              {loading ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#0a7ea4"
-                  style={styles.sectionLoader}
-                />
-              ) : (
-                events.map((e) => <EventRow key={e.id} event={e} />)
-              )}
-            </View>
-          </>
-        }
+      <HeaderWithProfile
+        title={t("book", "title")}
+        subtitle={t("book", "subtitle")}
+      />
+      <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -158,7 +121,40 @@ export default function BookScreen() {
             tintColor="#0a7ea4"
           />
         }
-      />
+      >
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            {t("book", "myBookings")}
+          </ThemedText>
+          {bookingsLoading && bookings.length === 0 ? (
+            <ActivityIndicator
+              size="small"
+              color="#0a7ea4"
+              style={styles.sectionLoader}
+            />
+          ) : bookings.length === 0 ? (
+            <ThemedText style={styles.emptyText}>
+              {t("book", "noBookings")}
+            </ThemedText>
+          ) : (
+            bookings.map((b) => <BookingRow key={b.id} booking={b} />)
+          )}
+        </View>
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            {t("book", "upcomingEvents")}
+          </ThemedText>
+          {loading ? (
+            <ActivityIndicator
+              size="small"
+              color="#0a7ea4"
+              style={styles.sectionLoader}
+            />
+          ) : (
+            events.map((e) => <EventRow key={e._id} event={e} />)
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -172,13 +168,7 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: "#010b24",
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: "#010b24",
-  },
-  subtitle: { fontSize: 15, opacity: 0.8, marginTop: 2 },
+  scroll: { flex: 1 },
   list: { paddingBottom: 24 },
   section: { marginBottom: 24, paddingHorizontal: 16 },
   sectionTitle: { marginBottom: 10 },
@@ -217,7 +207,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "rgba(34, 197, 94, 0.15)",
   },
-  statusText: { fontSize: 12, fontWeight: "600", color: "#16a34a" },
+  statusText: { fontSize: 12, fontWeight: "600", color: "#FFFFFF" },
   errorText: { textAlign: "center", paddingHorizontal: 24 },
-  retry: { marginTop: 12, color: "#0a7ea4", fontWeight: "600" },
+  retry: { marginTop: 12, color: "#FFFFFF", fontWeight: "600" },
 });

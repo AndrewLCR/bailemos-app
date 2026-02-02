@@ -70,7 +70,7 @@ export function EventCard({ event }: Props) {
           {event.description}
         </ThemedText>
         <ThemedText style={styles.meta} numberOfLines={1}>
-          {event.location}
+          {typeof event.location === "string" ? event.location : ""}
         </ThemedText>
       </View>
     </ThemedView>
@@ -137,19 +137,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     marginBottom: 2,
+    color: "#ffffff",
   },
   academy: {
     fontSize: 13,
     opacity: 0.8,
     marginBottom: 4,
+    color: "#ffffff",
   },
   description: {
     fontSize: 14,
     opacity: 0.9,
     marginBottom: 4,
+    color: "#ffffff",
   },
   meta: {
     fontSize: 13,
     opacity: 0.7,
+    color: "#ffffff",
   },
 });

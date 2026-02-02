@@ -1,7 +1,6 @@
+import { API_BASE } from "@/constants/api";
 import type { NearbyPlace } from "@/types/nearby";
 import axios from "axios";
-
-const API_BASE = "http://localhost:3000/api";
 
 // Mock center (e.g. city center) and offsets for demo markers
 const CENTER = { latitude: 37.7749, longitude: -122.4194 };

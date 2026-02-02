@@ -39,8 +39,12 @@ export function PillTabBar({
   const pillLeft = useSharedValue(0);
   const pillWidth = useSharedValue(0);
 
-  const activeIndex = state.index;
-  const routes = state.routes;
+  const routes = state.routes.filter((route) => route.name !== "profile");
+  const activeRoute = state.routes[state.index];
+  const activeIndex = activeRoute
+    ? routes.findIndex((r) => r.key === activeRoute.key)
+    : 0;
+  const visibleIndex = activeIndex >= 0 ? activeIndex : 0;
 
   const handleContainerLayout = useCallback((e: LayoutChangeEvent) => {
     const { width } = e.nativeEvent.layout;
@@ -59,16 +63,16 @@ export function PillTabBar({
   );
 
   useEffect(() => {
-    const layout = tabLayouts[activeIndex];
+    const layout = tabLayouts[visibleIndex];
     const width = containerWidth.current;
-    if (layout && width > 0) {
+    if (layout && width > 0 && routes.length > 0) {
       const horizontalPadding = 16;
       const slotWidth = (width - horizontalPadding) / routes.length;
-      const left = slotWidth * activeIndex + (slotWidth - layout.width) / 2;
+      const left = slotWidth * visibleIndex + (slotWidth - layout.width) / 2;
       pillLeft.value = withSpring(left, SPRING_CONFIG);
       pillWidth.value = withSpring(layout.width, SPRING_CONFIG);
     }
-  }, [activeIndex, tabLayouts, routes.length, pillLeft, pillWidth]);
+  }, [visibleIndex, tabLayouts, routes.length, pillLeft, pillWidth]);
 
   const pillAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: pillLeft.value }],
@@ -81,7 +85,7 @@ export function PillTabBar({
         <Animated.View style={[styles.pill, pillAnimatedStyle]} />
         {routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
+          const isFocused = visibleIndex === index;
 
           const onPress = () => {
             if (process.env.EXPO_OS === "ios") {

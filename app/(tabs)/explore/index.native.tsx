@@ -1,5 +1,6 @@
 import { DEFAULT_MAP_CENTER } from "@/api/nearby";
 import { ThemedText } from "@/components/themed-text";
+import { useLanguage } from "@/context/LanguageContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useNearby } from "@/hooks/useNearby";
 import type { NearbyPlace } from "@/types/nearby";
@@ -21,6 +22,7 @@ function getPlaceSubtitle(place: NearbyPlace): string {
 }
 
 export default function NearbyScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -31,7 +33,7 @@ export default function NearbyScreen() {
   const searchBg = useThemeColor({}, "background");
   const searchBorder = useThemeColor(
     { light: "#e5e5e5", dark: "#2a2a2a" },
-    "text",
+    "text"
   );
   const inputColor = useThemeColor({}, "text");
 
@@ -99,7 +101,9 @@ export default function NearbyScreen() {
     return (
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ActivityIndicator size="large" color="#0a7ea4" />
-        <ThemedText style={styles.loadingText}>Loading map…</ThemedText>
+        <ThemedText style={styles.loadingText}>
+          {t("explore", "loadingMap")}
+        </ThemedText>
       </SafeAreaView>
     );
   }
@@ -109,7 +113,7 @@ export default function NearbyScreen() {
       <SafeAreaView style={styles.center} edges={["top"]}>
         <ThemedText style={styles.errorText}>{error}</ThemedText>
         <ThemedText onPress={refresh} style={styles.retry}>
-          Tap to retry
+          {t("common", "tapToRetry")}
         </ThemedText>
       </SafeAreaView>
     );
@@ -145,11 +149,11 @@ export default function NearbyScreen() {
             { backgroundColor: searchBg, borderColor: searchBorder },
           ]}
         >
-          <MaterialIcons name="search" size={22} color="#687076" />
+          <MaterialIcons name="search" size={22} color="#FFFFFF" />
           <TextInput
             style={[styles.searchInput, { color: inputColor }]}
-            placeholder="Search academies & events…"
-            placeholderTextColor="#687076"
+            placeholder={t("explore", "searchPlaceholder")}
+            placeholderTextColor="#FFFFFF"
             value={query}
             onChangeText={setQuery}
           />
@@ -159,7 +163,9 @@ export default function NearbyScreen() {
         <View style={styles.countBadge} pointerEvents="none">
           <ThemedText style={styles.countText}>
             {filteredPlaces.length}{" "}
-            {filteredPlaces.length === 1 ? "place" : "places"}
+            {filteredPlaces.length === 1
+              ? t("common", "place")
+              : t("common", "places")}
           </ThemedText>
         </View>
       )}
@@ -185,7 +191,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: "absolute",
-    top: 0,
+    top: 56,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
@@ -203,7 +209,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#11181C",
+    color: "#FFFFFF",
     paddingVertical: 0,
   },
   countBadge: {
@@ -222,5 +228,5 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 8 },
   errorText: { textAlign: "center", paddingHorizontal: 24 },
-  retry: { marginTop: 12, color: "#0a7ea4", fontWeight: "600" },
+  retry: { marginTop: 12, color: "#FFFFFF", fontWeight: "600" },
 });

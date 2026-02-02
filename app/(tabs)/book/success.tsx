@@ -1,10 +1,12 @@
 import { ThemedText } from "@/components/themed-text";
+import { useLanguage } from "@/context/LanguageContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function BookingSuccessScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
 
   return (
@@ -14,10 +16,10 @@ export default function BookingSuccessScreen() {
           <MaterialIcons name="check-circle" size={80} color="#22c55e" />
         </View>
         <ThemedText type="title" style={styles.title}>
-          You’re booked!
+          {t("book", "youAreBooked")}
         </ThemedText>
         <ThemedText style={styles.subtitle}>
-          Your spot is reserved. We’ll see you there.
+          {t("book", "youAreBookedSubtitle")}
         </ThemedText>
         <Pressable
           style={({ pressed }) => [
@@ -26,7 +28,9 @@ export default function BookingSuccessScreen() {
           ]}
           onPress={() => router.replace("/(tabs)/book")}
         >
-          <ThemedText style={styles.buttonText}>Back to Book</ThemedText>
+          <ThemedText style={styles.buttonText}>
+            {t("book", "backToBook")}
+          </ThemedText>
         </Pressable>
       </View>
     </SafeAreaView>

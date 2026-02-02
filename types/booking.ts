@@ -12,8 +12,11 @@ export interface Booking {
   createdAt: string;
 }
 
+export type BookingRole = "leader" | "follower";
+
 export interface CreateBookingPayload {
   eventId: string;
+  role?: BookingRole;
 }
 
 export interface CreateBookingResponse {

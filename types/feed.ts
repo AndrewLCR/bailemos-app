@@ -1,5 +1,5 @@
 export interface Academy {
-  id: string;
+  _id: string;
   type: "academy";
   name: string;
   description: string;
@@ -9,7 +9,7 @@ export interface Academy {
 }
 
 export interface Event {
-  id: string;
+  _id: string;
   type: "event";
   title: string;
   description: string;

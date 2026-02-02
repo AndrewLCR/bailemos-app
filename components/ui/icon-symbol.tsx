@@ -22,6 +22,7 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
   "location.fill": "place",
+  "building.2.fill": "business",
   magnifyingglass: "search",
   calendar: "event",
   "person.fill": "person",

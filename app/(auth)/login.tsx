@@ -30,11 +30,11 @@ export default function Login() {
 
       <View className="space-y-4">
         <View>
-          <Text className="text-gray-400 mb-2">{t("login", "email")}</Text>
+          <Text className="text-white mb-2">{t("login", "email")}</Text>
           <TextInput
             className="w-full bg-gray-800 text-white p-4 rounded-lg border border-gray-700"
             placeholder={t("login", "emailPlaceholder")}
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#FFFFFF"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -42,11 +42,11 @@ export default function Login() {
         </View>
 
         <View>
-          <Text className="text-gray-400 mb-2">{t("login", "password")}</Text>
+          <Text className="text-white mb-2">{t("login", "password")}</Text>
           <TextInput
             className="w-full bg-gray-800 text-white p-4 rounded-lg border border-gray-700"
             placeholder={t("login", "passwordPlaceholder")}
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#FFFFFF"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -63,8 +63,8 @@ export default function Login() {
         </TouchableOpacity>
 
         <View className="flex-row justify-center mt-4">
-          <Text className="text-gray-400">{t("login", "noAccount")}</Text>
-          <Link href="/register" className="text-blue-400 font-bold">
+          <Text className="text-white">{t("login", "noAccount")}</Text>
+          <Link href="/register" className="text-white font-bold">
             {t("login", "register")}
           </Link>
         </View>

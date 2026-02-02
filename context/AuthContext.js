@@ -1,6 +1,19 @@
+import { updateProfile as updateProfileApi } from "@/api/profile";
+import { API_BASE } from "@/constants/api";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useEffect, useState } from "react";
+
+function userForSecureStore(userObj) {
+  if (!userObj) return userObj;
+  const avatar = userObj.avatar;
+  const isOversizedAvatar =
+    typeof avatar === "string" &&
+    (avatar.startsWith("data:") || avatar.length > 2000);
+  if (!isOversizedAvatar) return userObj;
+  const { avatar: _avatar, ...rest } = userObj;
+  return rest;
+}
 
 export const AuthContext = createContext();
 
@@ -8,8 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Use your computer's IP address if testing on physical device, or 10.0.2.2 for Android Emulator, localhost for iOS simulator
-  const API_URL = "http://192.168.0.233:3000/api/auth";
+  const API_URL = `${API_BASE}/auth`;
 
   useEffect(() => {
     const loadUser = async () => {
@@ -17,7 +29,8 @@ export const AuthProvider = ({ children }) => {
         const token = await SecureStore.getItemAsync("token");
         const userData = await SecureStore.getItemAsync("user");
         if (token && userData) {
-          setUser(JSON.parse(userData));
+          const parsed = JSON.parse(userData);
+          setUser(parsed);
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         }
       } catch (e) {
@@ -40,7 +53,8 @@ export const AuthProvider = ({ children }) => {
         };
       }
       await SecureStore.setItemAsync("token", token);
-      await SecureStore.setItemAsync("user", JSON.stringify(res.data));
+      const userToStore = userForSecureStore(res.data);
+      await SecureStore.setItemAsync("user", JSON.stringify(userToStore));
       setUser(res.data);
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       return { success: true };
@@ -68,7 +82,8 @@ export const AuthProvider = ({ children }) => {
         };
       }
       await SecureStore.setItemAsync("token", token);
-      await SecureStore.setItemAsync("user", JSON.stringify(res.data));
+      const userToStore = userForSecureStore(res.data);
+      await SecureStore.setItemAsync("user", JSON.stringify(userToStore));
       setUser(res.data);
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       return { success: true };
@@ -87,8 +102,23 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common["Authorization"];
   };
 
+  const updateUser = async (updates) => {
+    if (!user) return { success: false, error: "Not logged in" };
+    const res = await updateProfileApi(updates);
+    const fromApi = res.success && res.user ? res.user : {};
+    const merged = { ...user, ...fromApi, ...updates };
+    setUser(merged);
+    const toStore = userForSecureStore(merged);
+    await SecureStore.setItemAsync("user", JSON.stringify(toStore));
+    return res.success
+      ? { success: true, user: merged }
+      : { success: false, error: res.error, user: merged };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, updateUser, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

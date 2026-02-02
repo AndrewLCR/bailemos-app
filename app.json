@@ -28,6 +28,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos for your profile picture.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for your profile picture."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to show nearby academies and events."
