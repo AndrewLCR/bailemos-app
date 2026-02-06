@@ -7,57 +7,37 @@ import type {
 import type { Event } from "@/types/feed";
 import axios from "axios";
 
-const MOCK_EVENTS: Event[] = [
-  {
-    _id: "e1",
-    type: "event",
-    title: "Friday Salsa Social",
-    description: "Open social with live band. All levels welcome.",
-    imageUrl: null,
-    date: "2025-02-07",
-    time: "20:00",
-    location: "Salsa Caliente Studio",
-    academyName: "Salsa Caliente",
-  },
-  {
-    _id: "e2",
-    type: "event",
-    title: "Bachata Workshop",
-    description: "2-hour workshop focusing on musicality and connection.",
-    imageUrl: null,
-    date: "2025-02-08",
-    time: "14:00",
-    location: "Tango Nuevo",
-    academyName: "Tango Nuevo",
-  },
-  {
-    _id: "e3",
-    type: "event",
-    title: "Milonga Night",
-    description: "Traditional Argentine tango milonga with DJ.",
-    imageUrl: null,
-    date: "2025-02-09",
-    time: "21:00",
-    location: "Tango Nuevo",
-    academyName: "Tango Nuevo",
-  },
-];
-
 export async function fetchBookableEvents(): Promise<Event[]> {
   try {
     const res = await axios
       .get<Event[]>(`${API_BASE}/events`)
       .catch(() => ({ data: null }));
-    return Array.isArray(res?.data) ? res.data : MOCK_EVENTS;
+    return Array.isArray(res?.data) ? res.data : [];
   } catch {
-    return MOCK_EVENTS;
+    return [];
   }
 }
 
-export async function fetchMyBookings(): Promise<Booking[]> {
+/** Raw item from GET academy/bookings/my (event or class booking). */
+export type MyBookingItem =
+  | Booking
+  | {
+      id: string;
+      classId?: string;
+      className?: string;
+      schedule?: string;
+      class_name?: string;
+      class?: { name?: string };
+      role?: string;
+      status?: string;
+      createdAt?: string;
+      [key: string]: unknown;
+    };
+
+export async function fetchMyBookings(): Promise<MyBookingItem[]> {
   try {
     const res = await axios
-      .get<Booking[]>(`${API_BASE}/bookings`)
+      .get<MyBookingItem[]>(`${API_BASE}/academy/bookings/my`)
       .catch(() => ({ data: null }));
     return Array.isArray(res?.data) ? res.data : [];
   } catch {
@@ -77,20 +57,42 @@ export async function createBooking(
       .catch(() => null);
     if (res?.data?.booking) return res.data;
   } catch {
-    // fall through to mock
+    // fall through
   }
-  const event = MOCK_EVENTS.find((e) => e._id === eventId);
-  if (!event) throw new Error("Event not found");
-  const booking: Booking = {
-    id: `b-${Date.now()}`,
-    eventId: event._id,
-    eventTitle: event.title,
-    eventDate: event.date,
-    eventTime: event.time,
-    location: event.location,
-    academyName: event.academyName,
-    status: "confirmed",
-    createdAt: new Date().toISOString(),
-  };
-  return { booking };
+  throw new Error("Event not found");
+}
+
+/** Payload for class booking (POST academy/bookings). */
+export interface CreateClassBookingPayload {
+  classId: string;
+  role?: "leader" | "follower";
+}
+
+export async function createClassBooking(
+  classId: string,
+  options?: { role?: "leader" | "follower" }
+): Promise<void> {
+  const payload: CreateClassBookingPayload = { classId };
+  if (options?.role) payload.role = options.role;
+  await axios.post(`${API_BASE}/academy/bookings`, payload);
+}
+
+/** Class booking returned by GET academy/bookings. */
+export interface ClassBooking {
+  id: string;
+  classId: string;
+  role?: "leader" | "follower";
+  status?: string;
+  createdAt?: string;
+}
+
+export async function fetchMyClassBookings(): Promise<ClassBooking[]> {
+  const res = await axios
+    .get<ClassBooking[]>(`${API_BASE}/academy/bookings/my`)
+    .catch(() => ({ data: [] }));
+  return Array.isArray(res?.data) ? res.data : [];
+}
+
+export async function cancelClassBooking(bookingId: string): Promise<void> {
+  await axios.delete(`${API_BASE}/academy/bookings/${bookingId}`);
 }

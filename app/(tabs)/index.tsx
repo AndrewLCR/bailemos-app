@@ -5,7 +5,12 @@ import { FeedItemCard } from "@/components/feed/FeedItemCard";
 import { HeaderWithProfile } from "@/components/header-with-profile";
 import { ThemedText } from "@/components/themed-text";
 import { useLanguage } from "@/context/LanguageContext";
-import { useBookings, useCreateBooking } from "@/hooks/useBookings";
+import {
+  useBookings,
+  useCancelClassBooking,
+  useClassBookings,
+  useCreateClassBooking,
+} from "@/hooks/useBookings";
 import { useClasses } from "@/hooks/useClasses";
 import { useFeed } from "@/hooks/useFeed";
 import type { FeedItem } from "@/types/feed";
@@ -109,21 +114,31 @@ export default function HomeScreen() {
     loading: classesLoading,
     refresh: refreshClasses,
   } = useClasses();
+  const { classBookings, refresh: refreshClassBookings } = useClassBookings();
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
 
   const handleBookingSuccess = useCallback(() => {
     setSelectedClass(null);
     refreshBookings();
     refreshClasses();
-  }, [refreshBookings, refreshClasses]);
+    refreshClassBookings();
+  }, [refreshBookings, refreshClasses, refreshClassBookings]);
 
-  const { create: createBookingFn, submitting: bookingSubmitting } =
-    useCreateBooking(handleBookingSuccess);
+  const { create: createClassBookingFn, submitting: bookingSubmitting } =
+    useCreateClassBooking(handleBookingSuccess);
+
+  const { cancel: cancelClassBookingFn, submitting: cancelSubmitting } =
+    useCancelClassBooking(handleBookingSuccess);
+
+  const existingClassBooking = useMemo(() => {
+    if (!selectedClass) return null;
+    return classBookings.find((b) => b.classId === selectedClass._id) ?? null;
+  }, [selectedClass, classBookings]);
 
   const handleBookClass = useCallback(
     async (classId: string, role: LeaderFollowerRole) => {
       try {
-        await createBookingFn(classId, { role });
+        await createClassBookingFn(classId, { role });
       } catch {
         Alert.alert(
           t("book", "bookingFailed"),
@@ -131,7 +146,21 @@ export default function HomeScreen() {
         );
       }
     },
-    [createBookingFn, t]
+    [createClassBookingFn, t]
+  );
+
+  const handleCancelClass = useCallback(
+    async (bookingId: string) => {
+      try {
+        await cancelClassBookingFn(bookingId);
+      } catch {
+        Alert.alert(
+          t("book", "bookingFailed"),
+          t("feed", "cancelBookingFailedMessage")
+        );
+      }
+    },
+    [cancelClassBookingFn, t]
   );
 
   const isRegisteredToAcademy = (user && bookings.length > 0) ?? false;
@@ -144,6 +173,7 @@ export default function HomeScreen() {
     refresh();
     refreshBookings();
     refreshClasses();
+    refreshClassBookings();
   };
 
   if (loading && items.length === 0) {
@@ -197,8 +227,11 @@ export default function HomeScreen() {
         visible={!!selectedClass}
         onClose={() => setSelectedClass(null)}
         classItem={selectedClass}
+        existingBooking={existingClassBooking ?? null}
         onBook={handleBookClass}
+        onCancel={handleCancelClass}
         submitting={bookingSubmitting}
+        cancelSubmitting={cancelSubmitting}
       />
       <HeaderWithProfile
         title={t("feed", "title")}

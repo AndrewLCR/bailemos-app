@@ -6,4 +6,4 @@
 export const API_BASE =
   (typeof process !== "undefined" &&
     process.env?.EXPO_PUBLIC_API_URL?.replace(/\/$/, "")) ||
-  "http://192.168.50.129:3000/api";
+  "http://192.168.0.233:3000/api";

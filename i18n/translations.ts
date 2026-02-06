@@ -38,6 +38,11 @@ export const translations = {
       goingAs: "I'm going as",
       leader: "Leader",
       follower: "Follower",
+      youAreBookedForThisClass: "You're booked for this class.",
+      asRole: "as",
+      cancelBooking: "Cancel booking",
+      cancelBookingFailedMessage:
+        "Could not cancel the booking. Please try again.",
     },
     academies: {
       title: "Academies",
@@ -183,6 +188,11 @@ export const translations = {
       goingAs: "Voy como",
       leader: "Líder",
       follower: "Seguidor",
+      youAreBookedForThisClass: "Tienes reserva para esta clase.",
+      asRole: "como",
+      cancelBooking: "Cancelar reserva",
+      cancelBookingFailedMessage:
+        "No se pudo cancelar la reserva. Inténtalo de nuevo.",
     },
     academies: {
       title: "Academias",

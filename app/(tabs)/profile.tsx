@@ -1,11 +1,13 @@
+import type { MyBookingItem } from "@/api/booking";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AuthContext } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useBookings } from "@/hooks/useBookings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import { Link, useRouter } from "expo-router";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import {
   Alert,
   Image,
@@ -47,11 +49,57 @@ function formatDDMM(
   return `${day}/${month}`;
 }
 
+const TODAY = () => new Date().toISOString().slice(0, 10);
+
+function getBookingDateStr(b: MyBookingItem): string | null {
+  const ev = b as { eventDate?: string };
+  const cl = b as {
+    date?: string;
+    classDate?: string;
+    scheduledAt?: string;
+    createdAt?: string;
+  };
+  const dateStr =
+    ev.eventDate ??
+    cl.date ??
+    cl.classDate ??
+    cl.scheduledAt ??
+    cl.createdAt ??
+    null;
+  return dateStr && typeof dateStr === "string" ? dateStr : null;
+}
+
+function isFutureBooking(b: MyBookingItem): boolean {
+  const dateStr = getBookingDateStr(b);
+  if (!dateStr) return true;
+  return dateStr.slice(0, 10) >= TODAY();
+}
+
+function isBookingInCurrentMonth(b: MyBookingItem): boolean {
+  const dateStr = getBookingDateStr(b);
+  if (!dateStr) return false;
+  const d = new Date(dateStr.slice(0, 10));
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+  );
+}
+
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useContext(AuthContext);
   const { locale, setLocale, t } = useLanguage();
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const { bookings } = useBookings();
+  const scheduledCount = useMemo(
+    () => bookings.filter(isFutureBooking).length,
+    [bookings]
+  );
+  const thisMonthCount = useMemo(
+    () => bookings.filter(isBookingInCurrentMonth).length,
+    [bookings]
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -180,14 +228,18 @@ export default function ProfileScreen() {
               <ThemedText style={styles.cardLabel}>
                 {t("profile", "scheduled")}
               </ThemedText>
-              <ThemedText style={styles.cardValueLarge}>5</ThemedText>
+              <ThemedText style={styles.cardValueLarge}>
+                {scheduledCount}
+              </ThemedText>
             </View>
             <View style={styles.cardsColumn}>
               <View style={[styles.cardSmall, { backgroundColor: CARD_BLUE }]}>
                 <ThemedText style={styles.cardLabel}>
                   {t("profile", "thisMonth")}
                 </ThemedText>
-                <ThemedText style={styles.cardValue}>14</ThemedText>
+                <ThemedText style={styles.cardValue}>
+                  {thisMonthCount}
+                </ThemedText>
               </View>
               <View style={[styles.cardSmall, { backgroundColor: CARD_BLUE }]}>
                 <ThemedText style={styles.cardLabel}>

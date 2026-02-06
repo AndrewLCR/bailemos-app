@@ -1,3 +1,4 @@
+import { MyBookingItem } from "@/api/booking";
 import type { ClassItem } from "@/api/classes";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -28,6 +29,7 @@ export interface ClassDetailModalProps {
   classItem: ClassItem | null;
   onBook: (classId: string, role: LeaderFollowerRole) => void;
   submitting?: boolean;
+  existingBooking: MyBookingItem | null;
 }
 
 export function ClassDetailModal({
@@ -36,6 +38,7 @@ export function ClassDetailModal({
   classItem,
   onBook,
   submitting = false,
+  existingBooking,
 }: ClassDetailModalProps) {
   const { t } = useLanguage();
   const [role, setRole] = useState<LeaderFollowerRole | null>(null);

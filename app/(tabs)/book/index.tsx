@@ -1,10 +1,10 @@
+import type { MyBookingItem } from "@/api/booking";
 import { HeaderWithProfile } from "@/components/header-with-profile";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useLanguage } from "@/context/LanguageContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useBookableEvents, useBookings } from "@/hooks/useBookings";
-import type { Booking } from "@/types/booking";
 import type { Event } from "@/types/feed";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Link } from "expo-router";
@@ -18,20 +18,64 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+function formatDate(iso: string | undefined): string {
+  if (!iso || typeof iso !== "string") return "";
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "";
+  }
 }
 
-function formatTime(t: string) {
+function formatTime(t: string | undefined): string {
+  if (!t || typeof t !== "string") return "";
   const [h, m] = t.split(":");
   const hour = parseInt(h, 10);
+  if (Number.isNaN(hour)) return t;
   const am = hour < 12;
   const h12 = hour % 12 || 12;
-  return `${h12}:${m} ${am ? "AM" : "PM"}`;
+  return `${h12}:${m ?? "00"} ${am ? "AM" : "PM"}`;
+}
+
+/** Derive display title from event or class booking. */
+function getBookingTitle(b: MyBookingItem): string {
+  const ev = b as { eventTitle?: string; event_title?: string };
+  const cl = b as {
+    className?: string;
+    class_name?: string;
+    class?: { name?: string };
+    classId?: string;
+  };
+  return (
+    ev.eventTitle ??
+    ev.event_title ??
+    cl.className ??
+    cl.class_name ??
+    cl.class?.name ??
+    (cl.classId ? String(cl.classId) : null) ??
+    "Booking"
+  );
+}
+
+/** Derive display date/time from event or class booking. */
+function getBookingSubtitle(b: MyBookingItem): string {
+  const ev = b as {
+    eventDate?: string;
+    eventTime?: string;
+    event_date?: string;
+    event_time?: string;
+  };
+  const cl = b as { schedule?: string; createdAt?: string };
+  const date = ev.eventDate ?? ev.event_date;
+  const time = ev.eventTime ?? ev.event_time;
+  if (date && time) {
+    return `${formatDate(date)} · ${formatTime(time)}`;
+  }
+  return cl.schedule ?? (cl.createdAt ? formatDate(cl.createdAt) : "") ?? "";
 }
 
 function EventRow({ event }: { event: Event }) {
@@ -59,16 +103,19 @@ function EventRow({ event }: { event: Event }) {
   );
 }
 
-function BookingRow({ booking }: { booking: Booking }) {
+function BookingRow({ booking }: { booking: MyBookingItem }) {
+  const title = getBookingTitle(booking);
+  const subtitle = getBookingSubtitle(booking);
+  const status = (booking as { status?: string }).status ?? "—";
   return (
     <ThemedView style={styles.bookingRow}>
       <View style={styles.bookingInfo}>
-        <ThemedText type="defaultSemiBold">{booking.eventTitle}</ThemedText>
-        <ThemedText style={styles.bookingMeta}>
-          {formatDate(booking.eventDate)} · {formatTime(booking.eventTime)}
-        </ThemedText>
+        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+        {subtitle ? (
+          <ThemedText style={styles.bookingMeta}>{subtitle}</ThemedText>
+        ) : null}
         <View style={styles.statusBadge}>
-          <ThemedText style={styles.statusText}>{booking.status}</ThemedText>
+          <ThemedText style={styles.statusText}>{status}</ThemedText>
         </View>
       </View>
     </ThemedView>
@@ -137,7 +184,12 @@ export default function BookScreen() {
               {t("book", "noBookings")}
             </ThemedText>
           ) : (
-            bookings.map((b) => <BookingRow key={b.id} booking={b} />)
+            bookings.map((b, index) => (
+              <BookingRow
+                key={b.id ? `${b.id}-${index}` : `booking-${index}`}
+                booking={b}
+              />
+            ))
           )}
         </View>
         <View style={styles.section}>
