@@ -43,6 +43,8 @@ export const translations = {
       cancelBooking: "Cancel booking",
       cancelBookingFailedMessage:
         "Could not cancel the booking. Please try again.",
+      cannotCancelWithinOneHour:
+        "You cannot cancel a booked class within 1 hour of its start.",
     },
     academies: {
       title: "Academies",
@@ -193,6 +195,8 @@ export const translations = {
       cancelBooking: "Cancelar reserva",
       cancelBookingFailedMessage:
         "No se pudo cancelar la reserva. Inténtalo de nuevo.",
+      cannotCancelWithinOneHour:
+        "No puedes cancelar una clase reservada durante la hora anterior a su inicio.",
     },
     academies: {
       title: "Academias",

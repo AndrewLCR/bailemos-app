@@ -117,11 +117,11 @@ export default function HomeScreen() {
   const { classBookings, refresh: refreshClassBookings } = useClassBookings();
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
 
-  const handleBookingSuccess = useCallback(() => {
-    setSelectedClass(null);
+  const handleBookingSuccess = useCallback(async () => {
+    await refreshClassBookings();
     refreshBookings();
     refreshClasses();
-    refreshClassBookings();
+    setSelectedClass(null);
   }, [refreshBookings, refreshClasses, refreshClassBookings]);
 
   const { create: createClassBookingFn, submitting: bookingSubmitting } =
@@ -132,7 +132,20 @@ export default function HomeScreen() {
 
   const existingClassBooking = useMemo(() => {
     if (!selectedClass) return null;
-    return classBookings.find((b) => b.classId === selectedClass._id) ?? null;
+    const selectedId = String(selectedClass._id);
+    return (
+      classBookings.find((b) => {
+        const cid = b.classId;
+        if (cid == null) return false;
+        const id =
+          typeof cid === "string"
+            ? cid
+            : typeof cid === "object" && cid !== null && "_id" in cid
+              ? String((cid as { _id: unknown })._id)
+              : String(cid);
+        return id === selectedId;
+      }) ?? null
+    );
   }, [selectedClass, classBookings]);
 
   const handleBookClass = useCallback(

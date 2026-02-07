@@ -1,17 +1,16 @@
-import { MyBookingItem } from "@/api/booking";
 import type { ClassItem } from "@/api/classes";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { AppButton } from "@/components/ui/app-button";
 import { useLanguage } from "@/context/LanguageContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 
 function formatTime(scheduleOrTime: string | undefined): string {
   if (!scheduleOrTime || typeof scheduleOrTime !== "string") return "";
   const s = scheduleOrTime.trim();
-  const timePart = s.includes(" ") ? s.split(" ").pop() ?? s : s;
+  const timePart = s.includes(" ") ? (s.split(" ").pop() ?? s) : s;
   const [h, m] = timePart.split(":");
   const hour = parseInt(h, 10);
   if (Number.isNaN(hour)) return scheduleOrTime;
@@ -21,15 +20,38 @@ function formatTime(scheduleOrTime: string | undefined): string {
   return `${h12}:${min} ${am ? "AM" : "PM"}`;
 }
 
+/** True if the user can still cancel (class start is more than 1 hour away). */
+function canCancelBooking(classItem: ClassItem): boolean {
+  const scheduleOrTime = classItem.schedule ?? classItem.time;
+  if (!scheduleOrTime || typeof scheduleOrTime !== "string") return true;
+  const s = scheduleOrTime.trim();
+  const timePart = s.includes(" ") ? (s.split(" ").pop() ?? s) : s;
+  const [h, m] = timePart.split(":");
+  const hour = parseInt(h, 10);
+  const min = parseInt(m ?? "0", 10);
+  if (Number.isNaN(hour)) return true;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const classStart = new Date(
+    today.getTime() + hour * 60 * 60 * 1000 + min * 60 * 1000
+  );
+  const oneHourBefore = classStart.getTime() - 60 * 60 * 1000;
+  return now.getTime() < oneHourBefore;
+}
+
 export type LeaderFollowerRole = "leader" | "follower";
+
+export type ExistingClassBooking = { id: string; role?: "leader" | "follower" };
 
 export interface ClassDetailModalProps {
   visible: boolean;
   onClose: () => void;
   classItem: ClassItem | null;
   onBook: (classId: string, role: LeaderFollowerRole) => void;
+  onCancel?: (bookingId: string) => void;
   submitting?: boolean;
-  existingBooking: MyBookingItem | null;
+  cancelSubmitting?: boolean;
+  existingBooking: ExistingClassBooking | null;
 }
 
 export function ClassDetailModal({
@@ -37,11 +59,25 @@ export function ClassDetailModal({
   onClose,
   classItem,
   onBook,
+  onCancel,
   submitting = false,
+  cancelSubmitting = false,
   existingBooking,
 }: ClassDetailModalProps) {
   const { t } = useLanguage();
   const [role, setRole] = useState<LeaderFollowerRole | null>(null);
+
+  const bookedRole: LeaderFollowerRole | null =
+    existingBooking?.role === "leader" || existingBooking?.role === "follower"
+      ? existingBooking.role
+      : null;
+  const isBooked = !!existingBooking && !!bookedRole;
+  const displayRole = isBooked ? bookedRole : role;
+
+  const allowCancel = useMemo(
+    () => isBooked && classItem !== null && canCancelBooking(classItem),
+    [isBooked, classItem]
+  );
 
   if (!visible || !classItem) return null;
 
@@ -53,6 +89,12 @@ export function ClassDetailModal({
   const handleBook = () => {
     if (!role) return;
     onBook(classItem._id, role);
+  };
+
+  const handleCancel = () => {
+    if (existingBooking && onCancel) {
+      onCancel(existingBooking.id);
+    }
   };
 
   const timeStr = formatTime(classItem.schedule ?? classItem.time);
@@ -98,57 +140,102 @@ export function ClassDetailModal({
 
             <View style={styles.roleSection}>
               <ThemedText style={styles.roleLabel}>
-                {t("feed", "goingAs")}
+                {isBooked
+                  ? t("feed", "youAreBookedForThisClass")
+                  : t("feed", "goingAs")}
               </ThemedText>
-              <View style={styles.roleRow}>
-                <Pressable
-                  onPress={() => setRole("leader")}
-                  style={[
-                    styles.rolePill,
-                    role === "leader" && styles.rolePillSelected,
-                  ]}
-                >
-                  <ThemedText
+              {isBooked ? (
+                <View style={styles.roleRow}>
+                  <View
                     style={[
-                      styles.rolePillText,
-                      role === "leader" && styles.rolePillTextSelected,
+                      styles.rolePill,
+                      styles.rolePillSelected,
+                      styles.rolePillLocked,
                     ]}
                   >
-                    {t("feed", "leader")}
-                  </ThemedText>
-                </Pressable>
-                <Pressable
-                  onPress={() => setRole("follower")}
-                  style={[
-                    styles.rolePill,
-                    role === "follower" && styles.rolePillSelected,
-                  ]}
-                >
-                  <ThemedText
+                    <ThemedText
+                      style={[styles.rolePillText, styles.rolePillTextSelected]}
+                    >
+                      {bookedRole === "leader"
+                        ? t("feed", "leader")
+                        : t("feed", "follower")}
+                    </ThemedText>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.roleRow}>
+                  <Pressable
+                    onPress={() => setRole("leader")}
                     style={[
-                      styles.rolePillText,
-                      role === "follower" && styles.rolePillTextSelected,
+                      styles.rolePill,
+                      displayRole === "leader" && styles.rolePillSelected,
                     ]}
                   >
-                    {t("feed", "follower")}
-                  </ThemedText>
-                </Pressable>
-              </View>
+                    <ThemedText
+                      style={[
+                        styles.rolePillText,
+                        displayRole === "leader" && styles.rolePillTextSelected,
+                      ]}
+                    >
+                      {t("feed", "leader")}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setRole("follower")}
+                    style={[
+                      styles.rolePill,
+                      displayRole === "follower" && styles.rolePillSelected,
+                    ]}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.rolePillText,
+                        displayRole === "follower" &&
+                          styles.rolePillTextSelected,
+                      ]}
+                    >
+                      {t("feed", "follower")}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              )}
             </View>
 
             <View style={styles.submitWrap}>
-              <AppButton
-                text={
-                  submitting
-                    ? t("common", "loading")
-                    : t("feed", "bookThisClass")
-                }
-                shape="rounded"
-                onPress={handleBook}
-                backgroundColor="#4f2983"
-                textColor="#ffffff"
-                disabled={submitting || !role}
-              />
+              {isBooked ? (
+                <>
+                  {!allowCancel ? (
+                    <ThemedText style={styles.cannotCancelText}>
+                      {t("feed", "cannotCancelWithinOneHour")}
+                    </ThemedText>
+                  ) : null}
+                  <AppButton
+                    text={
+                      cancelSubmitting
+                        ? t("common", "loading")
+                        : t("feed", "cancelBooking")
+                    }
+                    shape="rounded"
+                    onPress={handleCancel}
+                    backgroundColor="#8b2635"
+                    textColor="#ffffff"
+                    disabled={cancelSubmitting || !allowCancel}
+                  />
+                </>
+              ) : (
+                <AppButton
+                  text={
+                    submitting
+                      ? t("common", "loading")
+                      : t("feed", "bookThisClass")
+                  }
+                  shape="rounded"
+                  onPress={handleBook}
+                  backgroundColor="#4f2983"
+                  textColor="#ffffff"
+                  disabled={submitting || !role}
+                />
+              )}
             </View>
           </ThemedView>
         </Pressable>
@@ -223,6 +310,9 @@ const styles = StyleSheet.create({
     borderColor: "#4f2983",
     backgroundColor: "rgba(79, 41, 131, 0.35)",
   },
+  rolePillLocked: {
+    opacity: 0.95,
+  },
   rolePillText: {
     fontSize: 15,
     color: "rgba(255,255,255,0.9)",
@@ -230,6 +320,12 @@ const styles = StyleSheet.create({
   rolePillTextSelected: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  cannotCancelText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    marginBottom: 12,
+    fontStyle: "italic",
   },
   submitWrap: { marginTop: 8 },
 });

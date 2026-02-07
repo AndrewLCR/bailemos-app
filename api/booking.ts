@@ -65,7 +65,7 @@ export async function createBooking(
 /** Payload for class booking (POST academy/bookings). */
 export interface CreateClassBookingPayload {
   classId: string;
-  role?: "leader" | "follower";
+  danceRole?: "leader" | "follower";
 }
 
 export async function createClassBooking(
@@ -73,7 +73,7 @@ export async function createClassBooking(
   options?: { role?: "leader" | "follower" }
 ): Promise<void> {
   const payload: CreateClassBookingPayload = { classId };
-  if (options?.role) payload.role = options.role;
+  if (options?.role) payload.danceRole = options.role;
   await axios.post(`${API_BASE}/academy/bookings`, payload);
 }
 
@@ -86,13 +86,43 @@ export interface ClassBooking {
   createdAt?: string;
 }
 
-export async function fetchMyClassBookings(): Promise<ClassBooking[]> {
-  const res = await axios
-    .get<ClassBooking[]>(`${API_BASE}/academy/bookings/my`)
-    .catch(() => ({ data: [] }));
-  return Array.isArray(res?.data) ? res.data : [];
+/** Raw class booking from API (uses _id, class, danceRole). */
+interface RawClassBookingItem {
+  _id?: string;
+  class?: { _id?: string; id?: string };
+  classId?: string;
+  danceRole?: string;
+  role?: string;
+  [key: string]: unknown;
 }
 
+function normalizeClassBooking(raw: RawClassBookingItem): ClassBooking {
+  const id = raw._id != null ? String(raw._id) : "";
+  const classId =
+    raw.class?._id != null
+      ? String(raw.class._id)
+      : raw.class?.id != null
+        ? String(raw.class.id)
+        : raw.classId != null
+          ? String(raw.classId)
+          : "";
+  const roleRaw = raw.danceRole ?? raw.role;
+  const role =
+    roleRaw === "leader" || roleRaw === "follower" ? roleRaw : undefined;
+  return { id, classId, role, status: raw.status as string | undefined };
+}
+
+export async function fetchMyClassBookings(): Promise<ClassBooking[]> {
+  const res = await axios
+    .get<RawClassBookingItem[]>(`${API_BASE}/academy/bookings/my`)
+    .catch(() => ({ data: [] }));
+  const raw = Array.isArray(res?.data) ? res.data : [];
+  return raw.map(normalizeClassBooking).filter((b) => b.id && b.classId);
+}
+
+/** Cancel a class booking (PATCH to set status to "cancelled"). */
 export async function cancelClassBooking(bookingId: string): Promise<void> {
-  await axios.delete(`${API_BASE}/academy/bookings/${bookingId}`);
+  await axios.patch(`${API_BASE}/academy/bookings/${bookingId}`, {
+    status: "cancelled",
+  });
 }

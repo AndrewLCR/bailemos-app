@@ -78,7 +78,7 @@ export function useCreateBooking(onSuccess?: () => void) {
         setSubmitting(false);
       }
     },
-    [onSuccess]
+    [onSuccess],
   );
 
   return { create, submitting, error };
@@ -102,7 +102,7 @@ export function useCreateClassBooking(onSuccess?: () => void) {
         setSubmitting(false);
       }
     },
-    [onSuccess]
+    [onSuccess],
   );
 
   return { create, submitting, error };
@@ -123,7 +123,7 @@ export function useClassBookings() {
       setClassBookings(data);
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Failed to load class bookings"
+        e instanceof Error ? e.message : "Failed to load class bookings",
       );
       setClassBookings([]);
     } finally {
@@ -156,7 +156,7 @@ export function useCancelClassBooking(onSuccess?: () => void) {
         setSubmitting(false);
       }
     },
-    [onSuccess]
+    [onSuccess],
   );
 
   return { cancel, submitting, error };
